@@ -1,9 +1,54 @@
 {
   "name": "exe-usage",
-  "version": "0.0.1",
-  "description": "Placeholder until Phase 2. Will hold the status line sensor, the burn-rate predictor, the transcript aggregator, the analyst and the Telegram notifier.",
+  "version": "0.1.0",
+  "description": "Usage-limit guard: a status line with both rate-limit windows, a burn-rate predictor that runs a Fable analysis while budget remains, deterministic Telegram alerts at the limit, and /why-limits on demand.",
   "author": {
     "name": "Otabek Olimjonov",
     "url": "https://github.com/olimjonovotabek"
+  },
+  "keywords": ["usage", "rate-limit", "telegram", "status-line", "tokens"],
+  "userConfig": {
+    "telegram_bot_token": {
+      "type": "string",
+      "title": "Telegram bot token",
+      "description": "Token from @BotFather. Alerts and analyses are sent through this bot.",
+      "sensitive": true
+    },
+    "telegram_chat_id": {
+      "type": "string",
+      "title": "Telegram chat id",
+      "description": "Your chat id with the bot (send it a message, then read getUpdates)."
+    },
+    "analysis_model": {
+      "type": "string",
+      "title": "Analysis model",
+      "description": "Model for the deep analysis. Default claude-fable-5-1."
+    },
+    "analysis_effort": {
+      "type": "string",
+      "title": "Analysis effort",
+      "description": "low, medium, high, xhigh or max. Default high."
+    },
+    "analysis_auth": {
+      "type": "string",
+      "title": "Analysis auth",
+      "description": "subscription (default) or api_key. With api_key the analysis is immune to the limit it explains."
+    },
+    "anthropic_api_key": {
+      "type": "string",
+      "title": "Anthropic API key",
+      "description": "Only used when analysis_auth is api_key.",
+      "sensitive": true
+    },
+    "threshold_percent": {
+      "type": "string",
+      "title": "Alert threshold",
+      "description": "Run the analysis when a window is above this percent and projected to hit 100 before it resets. Default 60."
+    },
+    "pager": {
+      "type": "string",
+      "title": "Pager",
+      "description": "on to also get a Telegram message when Claude waits for permission or input. Default off."
+    }
   }
 }

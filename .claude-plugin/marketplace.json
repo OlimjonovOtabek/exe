@@ -32,8 +32,8 @@
     },
     {
       "name": "exe-usage",
-      "description": "Usage-limit guard: status line with rate-limit windows, burn-rate prediction, transcript analysis and Telegram alerts. Phase 2.",
-      "version": "0.0.1",
+      "description": "Usage-limit guard: a status line with both rate-limit windows, a burn-rate predictor that runs a Fable analysis while budget remains, deterministic Telegram alerts at the limit, and /why-limits on demand.",
+      "version": "0.1.0",
       "category": "productivity",
       "source": "./plugins/exe-usage"
     },

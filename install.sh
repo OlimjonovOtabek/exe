@@ -201,6 +201,27 @@ else
   fi
 fi
 
+# ---------- 6b. status line ----------
+head_ "status line"
+STATUSLINE_SCRIPT="$EXE_ROOT/plugins/exe-usage/statusline/statusline.js"
+if [ -f "$STATUSLINE_SCRIPT" ] && [ -f "$EXE_ROOT/bootstrap/merge-settings.js" ]; then
+  current="$(node -e 'try{const s=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));process.stdout.write((s.statusLine&&s.statusLine.command)||"")}catch(e){}' "$HOME/.claude/settings.json" 2>/dev/null || true)"
+  if [ -n "$current" ] && [ "${current#*exe-usage/statusline/statusline.js}" = "$current" ]; then
+    warn "status line already set to something else; to use exe's, set statusLine.command to: node \"$STATUSLINE_SCRIPT\""
+  elif [ "$DRY_RUN" = 1 ]; then
+    printf '  would set: statusLine.command=node "%s"\n' "$STATUSLINE_SCRIPT"
+  else
+    result="$(node "$EXE_ROOT/bootstrap/merge-settings.js" "$HOME/.claude/settings.json" "{\"statusLine\":{\"type\":\"command\",\"command\":\"node \\\"$STATUSLINE_SCRIPT\\\"\"}}")"
+    case "$result" in
+      changed) ok "status line set (5h and 7d limit windows, context, cost)" ;;
+      unchanged) skip "status line already exe's" ;;
+      *) fail "could not update ~/.claude/settings.json for the status line" ;;
+    esac
+  fi
+else
+  skip "status line (exe-usage not present yet)"
+fi
+
 # ---------- 7. pxpipe (opt-in) ----------
 head_ "pxpipe"
 if [ "$WITH_PXPIPE" = 1 ]; then

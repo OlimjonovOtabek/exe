@@ -1,0 +1,44 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/guard.js\" session-start", "timeout": 10 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/guard.js\" stop", "timeout": 30 }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "matcher": "rate_limit",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/guard.js\" limit-hit", "timeout": 90 }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "quota_auto_resume_fired",
+        "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/guard.js\" notification quota_auto_resume_fired", "timeout": 20 } ]
+      },
+      {
+        "matcher": "quota_auto_resume_stale",
+        "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/guard.js\" notification quota_auto_resume_stale", "timeout": 20 } ]
+      },
+      {
+        "matcher": "quota_auto_resume_disabled",
+        "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/guard.js\" notification quota_auto_resume_disabled", "timeout": 20 } ]
+      },
+      {
+        "matcher": "permission_prompt|idle_prompt",
+        "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/guard.js\" notification pager", "timeout": 20 } ]
+      }
+    ]
+  }
+}

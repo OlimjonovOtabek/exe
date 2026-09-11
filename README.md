@@ -8,7 +8,7 @@ One install for the way you work with Claude Code.
 |---|---|---|
 | `exe-kit` | The bundle. Installing it installs everything below plus caveman, ast-index and Matt Pocock's skills. | ready |
 | `exe-contexts` | Jira, GitLab and git identity per organization, picked automatically from the repo's remote host. Tokens stay in the keychain. | ready |
-| `exe-usage` | Usage-limit guard: status line with rate-limit windows, burn-rate prediction, transcript analysis, Telegram alerts. | Phase 2 |
+| `exe-usage` | Usage-limit guard: status line with both rate-limit windows, burn-rate prediction, transcript analysis by Fable, Telegram alerts. | ready |
 | `exe-figma` | Figma with one personal access token per context. Enabled per project, not part of the bundle. | Phase 3 |
 
 ## Install
@@ -115,6 +115,44 @@ A profile, abbreviated:
 
 Inside Claude Code the plugin adds three skills: `/ctx`, `/jira` and `/gitlab`, with compact-output recipes so tool results stay small.
 
+## Usage guard
+
+The installer sets Claude Code's status line to exe's script. It shows the model and effort, both rate-limit windows with the time to reset, context fill and session cost, and records a sample once a minute:
+
+```
+Fable 5.1·high │ 5h 62% ↻1h12m │ 7d 41% │ ctx 38% │ $0.53 │ px on
+```
+
+A `!` after a window means the current burn rate reaches 100% before the reset. Rate-limit percentages arrive only on Pro and Max plans; other plans see `limits n/a` and the reports still work from the transcripts.
+
+What happens, and when:
+
+| Moment | What exe-usage does | Model call |
+|---|---|---|
+| every turn end | reads the samples, projects the burn rate; above the threshold and heading for the wall, starts the analysis in the background, once per window | only when triggered |
+| the limit ends a turn | Telegram message with both windows, the top models and projects of the window, the largest tool result | none |
+| Claude resumes after the reset, or waits for you | Telegram message | none |
+| `/why-limits` | ranked causes with evidence and three to five actions, from a headless call on the analysis model | one |
+| `/usage-report` | markdown tables by model, effort, project, long sessions, largest tool results, plugin context cost, pxpipe savings | none |
+
+The analysis reads a compact summary computed locally, never raw transcripts. It runs outside pxpipe, without session persistence, and at most once per window unless forced with `--now`. With `analysis_auth` set to `api_key` it runs in bare mode on an API key, immune to the limit it explains.
+
+Configure the bot and the analyst once, through `/plugin configure exe-usage` or `claude plugin install exe-usage@exe --config telegram_bot_token=... --config telegram_chat_id=...`, or in `~/.config/exe/usage.json`:
+
+```json
+{
+  "telegram_bot_token": "123456:ABC...",
+  "telegram_chat_id": "987654321",
+  "analysis_model": "claude-fable-5-1",
+  "analysis_effort": "high",
+  "analysis_auth": "subscription",
+  "threshold_percent": "60",
+  "pager": "off"
+}
+```
+
+Set `pager` to `on` to also get a message when Claude waits for permission or input. State lives in `~/.local/state/exe/usage`: samples, reports and the alert log used when no bot is configured.
+
 ## Secrets
 
 Tokens never live in this repo or in settings files. The store is the macOS Keychain, `secret-tool` on Linux, or a mode-600 file as a last resort. A stored value of the form `op://vault/item/field` is resolved through the 1Password CLI.
@@ -157,7 +195,7 @@ plugins/exe-usage                 Phase 2
 plugins/exe-figma                 Phase 3
 ```
 
-Tests: `node --test "plugins/exe-contexts/tests/*.test.js"`. Validation: `claude plugin validate .`
+Tests: `node --test "plugins/*/tests/*.test.js"`. Validation: `claude plugin validate .`
 
 ## Uninstall
 

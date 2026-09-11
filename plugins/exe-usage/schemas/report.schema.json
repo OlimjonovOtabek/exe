@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["headline", "causes", "actions", "telegram_text"],
+  "properties": {
+    "headline": { "type": "string", "description": "One sentence: the main reason the limit is being consumed." },
+    "causes": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rank", "cause", "evidence", "share_percent"],
+        "properties": {
+          "rank": { "type": "integer" },
+          "cause": { "type": "string" },
+          "evidence": { "type": "string", "description": "The numbers from the summary that prove it." },
+          "share_percent": { "type": "number", "description": "Approximate share of the window's consumption attributable to this cause." }
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["action", "how", "expected_saving"],
+        "properties": {
+          "action": { "type": "string" },
+          "how": { "type": "string", "description": "The exact command, setting or habit." },
+          "expected_saving": { "type": "string" }
+        }
+      }
+    },
+    "telegram_text": { "type": "string", "description": "Plain text for Telegram, under 1500 characters." }
+  }
+}

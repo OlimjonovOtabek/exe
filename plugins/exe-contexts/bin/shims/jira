@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# exe shim for jira-cli: runs the real jira with the config and token of the current directory's context.
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/../.." && pwd)"
+# shellcheck source=_lib.sh
+. "$HERE/_lib.sh"
+REAL="$(exe_real jira "$HERE")" || { echo "jira-cli is not installed. macOS: brew install ankitpokhrel/jira-cli/jira-cli" >&2; exit 127; }
+exe_env "$ROOT" jira
+exec "$REAL" "$@"

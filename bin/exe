@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# exe command line, usable from any shell: exe ctx | exe setup | exe doctor | exe secret
+exec node "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/plugins/exe-contexts/bin/ctx.js" "$@"

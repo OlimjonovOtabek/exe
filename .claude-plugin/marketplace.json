@@ -25,8 +25,8 @@
     },
     {
       "name": "exe-contexts",
-      "description": "Auto-detected Jira, GitLab and git identity per organization, keyed on the repo's remote host. Phase 1.",
-      "version": "0.0.1",
+      "description": "Jira, GitLab and git identity per organization, chosen automatically from the repo's remote host. Tokens stay in the keychain and are injected per command by shims for jira and glab.",
+      "version": "0.1.0",
       "category": "productivity",
       "source": "./plugins/exe-contexts"
     },

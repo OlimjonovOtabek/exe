@@ -1,9 +1,10 @@
 {
   "name": "exe-contexts",
-  "version": "0.0.1",
-  "description": "Placeholder until Phase 1. Will hold the profile registry, the SessionStart context hook, the Jira and GitLab skills and the doctor.",
+  "version": "0.1.0",
+  "description": "Jira, GitLab and git identity per organization, chosen automatically from the repo's remote host. Tokens stay in the OS keychain and are injected per command by shims for jira and glab.",
   "author": {
     "name": "Otabek Olimjonov",
     "url": "https://github.com/olimjonovotabek"
-  }
+  },
+  "keywords": ["jira", "gitlab", "multi-account", "context", "secrets"]
 }

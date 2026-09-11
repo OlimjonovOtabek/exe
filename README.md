@@ -7,11 +7,9 @@ One install for the way you work with Claude Code.
 | Plugin | What it does | Status |
 |---|---|---|
 | `exe-kit` | The bundle. Installing it installs everything below plus caveman, ast-index and Matt Pocock's skills. | ready |
-| `exe-contexts` | Jira, GitLab and git identity per organization, picked automatically from the repo's remote host. | Phase 1 |
+| `exe-contexts` | Jira, GitLab and git identity per organization, picked automatically from the repo's remote host. Tokens stay in the keychain. | ready |
 | `exe-usage` | Usage-limit guard: status line with rate-limit windows, burn-rate prediction, transcript analysis, Telegram alerts. | Phase 2 |
 | `exe-figma` | Figma with one personal access token per context. Enabled per project, not part of the bundle. | Phase 3 |
-
-The build plan with phases, acceptance checks and the reasoning behind each choice lives in the project's design page.
 
 ## Install
 
@@ -33,10 +31,10 @@ The installer is idempotent. Run it again any time; it only touches what is miss
 
 1. Checks `git`, `curl` and Node 20 or newer.
 2. Installs Claude Code with the native installer when it is missing.
-3. Installs `glab`, `jira-cli` and the `ast-index` binary. Homebrew on macOS; on Linux it uses Homebrew or cargo when present and otherwise prints where to get them.
+3. Installs `glab`, `jira-cli` and the `ast-index` binary. Homebrew on macOS; on Linux it uses Homebrew when present and otherwise downloads the release binaries into `~/.local/bin` and builds ast-index with cargo.
 4. Installs `pxpipe-proxy` and `ccusage` from npm.
 5. Registers the caveman, ast-index and official marketplaces, then this one.
-6. Installs `exe-kit`, which pulls in every plugin of the set.
+6. Installs `exe-kit`, which pulls in every plugin of the set, and links the `exe` command into `~/.local/bin`.
 7. With `--pxpipe`: registers pxpipe as a launchd agent or systemd user unit and sets `ANTHROPIC_BASE_URL` in `~/.claude/settings.json`.
 
 ### Flags
@@ -58,17 +56,76 @@ claude plugin marketplace add olimjonovotabek/exe
 claude plugin install exe-kit@exe
 ```
 
-## Secrets
+## Contexts
 
-Tokens never live in this repo or in settings files. The helper stores them in the macOS Keychain, in `secret-tool` on Linux, or in a mode-600 file as a last resort. A stored value of the form `op://vault/item/field` is resolved through the 1Password CLI.
+A context is one organization: its Jira, its GitLab host, its Figma account and the email you commit with. The context of a directory is chosen, in order, from `EXE_CONTEXT`, then `.exe.json` at the git root, then the host of the `origin` remote, then the default in the profiles file.
+
+Set it up once:
 
 ```bash
-bash ~/.claude/plugins/marketplaces/exe/bootstrap/secrets.sh set jira-uzinfocom
-bash ~/.claude/plugins/marketplaces/exe/bootstrap/secrets.sh get jira-uzinfocom
-bash ~/.claude/plugins/marketplaces/exe/bootstrap/secrets.sh list
+exe ctx init                       # writes ~/.config/exe/profiles.json from the template; edit it
+exe secret set jira-uzinfocom      # prompts for the token, stores it in the keychain
+exe secret set gitlab-uzinfocom
+exe setup all                      # git identities per host, jira-cli config per context
+exe doctor                         # one live call per token, plus tools and proxy
 ```
 
-Names the plugins will look for: `jira-<context>`, `gitlab-<context>`, `figma-<context>`, `telegram-bot-token`, `telegram-chat-id`, `anthropic-api-key`. Any of them can be overridden for one shell with `EXE_SECRET_<NAME>` in upper case, dashes as underscores.
+Then work as usual. Inside Claude Code sessions `jira` and `glab` are shims: they run the real tools with the token and config of the current directory's context, so the same command reaches jira.uzinfocom.uz in one repo and bepro-devhub.atlassian.net in another. Nothing is exported into the session environment.
+
+In your own terminal, either use the shims too:
+
+```bash
+export PATH="$HOME/.claude/plugins/marketplaces/exe/plugins/exe-contexts/bin/shims:$PATH"
+```
+
+or load one context into the current shell:
+
+```bash
+eval "$(exe ctx env --with-secrets)"
+```
+
+Useful commands:
+
+| Command | Effect |
+|---|---|
+| `exe ctx show` | which context applies here and why |
+| `exe ctx list` | all contexts |
+| `exe ctx use devhub` | pin this repo to a context, written to `.exe.json` at the git root |
+| `exe setup glab` | also store the tokens in glab's own keyring, for terminals without the shim |
+| `exe doctor --context uzinfocom` | check one context |
+
+A profile, abbreviated:
+
+```json
+{
+  "default": "personal",
+  "contexts": {
+    "uzinfocom": {
+      "match":  { "remoteHosts": ["gitlab.uzinfocom.uz"] },
+      "jira":   { "kind": "datacenter", "url": "https://jira.uzinfocom.uz", "login": "your.username", "token": "secret:jira-uzinfocom", "project": "PROJ" },
+      "gitlab": { "host": "gitlab.uzinfocom.uz", "token": "secret:gitlab-uzinfocom" },
+      "figma":  { "token": "secret:figma-work" },
+      "git":    { "name": "Otabek Olimjonov", "email": "you@uzinfocom.uz" }
+    }
+  }
+}
+```
+
+`jira.kind` is `datacenter` for a self-hosted Jira with a personal access token, or `cloud` for an Atlassian site with an API token, where `login` is your email. Token values are references: `secret:NAME`, `env:VAR`, or `op://vault/item/field` for the 1Password CLI. The full template is at `plugins/exe-contexts/templates/profiles.example.json`.
+
+Inside Claude Code the plugin adds three skills: `/ctx`, `/jira` and `/gitlab`, with compact-output recipes so tool results stay small.
+
+## Secrets
+
+Tokens never live in this repo or in settings files. The store is the macOS Keychain, `secret-tool` on Linux, or a mode-600 file as a last resort. A stored value of the form `op://vault/item/field` is resolved through the 1Password CLI.
+
+```bash
+exe secret set jira-uzinfocom
+exe secret get jira-uzinfocom
+exe secret list
+```
+
+Any secret can be overridden for one shell with `EXE_SECRET_<NAME>` in upper case, dashes as underscores.
 
 ## pxpipe
 
@@ -90,20 +147,24 @@ node ~/.claude/plugins/marketplaces/exe/bootstrap/merge-settings.js ~/.claude/se
 ```
 .claude-plugin/marketplace.json   the marketplace: four exe plugins, cross-marketplace allowlist
 install.sh                        the installer
+bin/exe                           the exe command for your terminal
 bootstrap/merge-settings.js       deep-merge a patch into a settings file, idempotent, with backup
-bootstrap/secrets.sh              keychain / secret-tool / file secret store
 bootstrap/pxpipe-service.sh       launchd or systemd service for pxpipe
+bootstrap/secrets.sh              shim to the secret store inside exe-contexts
 plugins/exe-kit                   dependencies-only bundle
-plugins/exe-contexts              Phase 1
+plugins/exe-contexts              profiles, shims, hooks, skills, doctor, secret store
 plugins/exe-usage                 Phase 2
 plugins/exe-figma                 Phase 3
 ```
+
+Tests: `node --test "plugins/exe-contexts/tests/*.test.js"`. Validation: `claude plugin validate .`
 
 ## Uninstall
 
 ```bash
 claude plugin uninstall exe-kit@exe --prune
 claude plugin marketplace remove exe
+rm -f ~/.local/bin/exe
 bash ~/.claude/plugins/marketplaces/exe/bootstrap/pxpipe-service.sh uninstall   # if you enabled it
 ```
 

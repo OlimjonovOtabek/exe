@@ -1,0 +1,39 @@
+{
+  "$comment": "exe profiles. Copy to ~/.config/exe/profiles.json and edit. Token values are references: secret:NAME (exe secret store), env:VAR, op://vault/item/field, or a literal string (not recommended).",
+  "default": "personal",
+  "contexts": {
+    "uzinfocom": {
+      "match": { "remoteHosts": ["gitlab.uzinfocom.uz"] },
+      "jira": {
+        "kind": "datacenter",
+        "url": "https://jira.uzinfocom.uz",
+        "login": "your.username",
+        "token": "secret:jira-uzinfocom",
+        "project": "PROJ",
+        "insecure": false
+      },
+      "gitlab": { "host": "gitlab.uzinfocom.uz", "token": "secret:gitlab-uzinfocom" },
+      "figma": { "token": "secret:figma-work" },
+      "git": { "name": "Otabek Olimjonov", "email": "you@uzinfocom.uz" }
+    },
+    "devhub": {
+      "match": { "remoteHosts": ["git.devhub.uz"] },
+      "jira": {
+        "kind": "cloud",
+        "url": "https://bepro-devhub.atlassian.net",
+        "login": "you@devhub.uz",
+        "token": "secret:jira-devhub",
+        "project": "BEP"
+      },
+      "gitlab": { "host": "git.devhub.uz", "token": "secret:gitlab-devhub" },
+      "figma": { "token": "secret:figma-freelance" },
+      "git": { "name": "Otabek Olimjonov", "email": "you@devhub.uz" }
+    },
+    "personal": {
+      "match": { "remoteHosts": ["gitlab.com", "github.com"] },
+      "gitlab": { "host": "gitlab.com", "token": "secret:gitlab-com" },
+      "figma": { "token": "secret:figma-personal" },
+      "git": { "name": "Otabek Olimjonov", "email": "olimjonovwork@gmail.com" }
+    }
+  }
+}

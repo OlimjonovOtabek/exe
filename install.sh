@@ -116,16 +116,34 @@ brew_install() {
   if [ -n "$tap" ]; then run brew tap "$tap" >/dev/null; fi
   act "$name installed" brew install -q "$formula"
 }
+# Linux without Homebrew: fetch the release binaries into ~/.local/bin.
+linux_arch() { case "$(uname -m)" in x86_64) echo "$1";; aarch64|arm64) echo arm64;; *) return 1;; esac; }
+install_glab_linux() {
+  local arch tag ver tmp
+  arch="$(linux_arch amd64)" || { echo "no glab build for $(uname -m)" >&2; return 1; }
+  tag="$(curl -fsSL 'https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/releases?per_page=1' | grep -o '"tag_name":"[^"]*"' | head -1 | cut -d'"' -f4)"
+  [ -n "$tag" ] || { echo "could not read the latest glab release" >&2; return 1; }
+  ver="${tag#v}"; tmp="$(mktemp -d)"
+  curl -fsSL "https://gitlab.com/gitlab-org/cli/-/releases/$tag/downloads/glab_${ver}_linux_${arch}.tar.gz" | tar xz -C "$tmp"
+  mkdir -p "$HOME/.local/bin" && install -m 0755 "$(find "$tmp" -type f -name glab | head -1)" "$HOME/.local/bin/glab"
+}
+install_jira_linux() {
+  local arch tag ver tmp
+  arch="$(linux_arch x86_64)" || { echo "no jira-cli build for $(uname -m)" >&2; return 1; }
+  tag="$(git ls-remote --tags --refs https://github.com/ankitpokhrel/jira-cli 2>/dev/null | awk -F/ '{print $NF}' | sort -V | tail -1)"
+  [ -n "$tag" ] || { echo "could not read the latest jira-cli release" >&2; return 1; }
+  ver="${tag#v}"; tmp="$(mktemp -d)"
+  curl -fsSL "https://github.com/ankitpokhrel/jira-cli/releases/download/$tag/jira_${ver}_linux_${arch}.tar.gz" | tar xz -C "$tmp"
+  mkdir -p "$HOME/.local/bin" && install -m 0755 "$(find "$tmp" -type f -name jira | head -1)" "$HOME/.local/bin/jira"
+}
 if [ "$WITH_TOOLS" = 1 ]; then
   if [ "$OS" = Darwin ] || command -v brew >/dev/null 2>&1; then
     brew_install glab
     brew_install jira ankitpokhrel/jira-cli jira-cli
     brew_install ast-index defendend/ast-index ast-index
   else
-    command -v glab >/dev/null 2>&1 && skip "glab already installed" \
-      || warn "glab: install from https://gitlab.com/gitlab-org/cli/-/releases (no Homebrew on this Linux)"
-    command -v jira >/dev/null 2>&1 && skip "jira-cli already installed" \
-      || warn "jira-cli: install from https://github.com/ankitpokhrel/jira-cli/releases"
+    command -v glab >/dev/null 2>&1 && skip "glab already installed" || act "glab installed to ~/.local/bin" install_glab_linux
+    command -v jira >/dev/null 2>&1 && skip "jira-cli already installed" || act "jira-cli installed to ~/.local/bin" install_jira_linux
     if command -v ast-index >/dev/null 2>&1; then skip "ast-index already installed"
     elif command -v cargo >/dev/null 2>&1; then act "ast-index installed via cargo" cargo install -q ast-index --locked
     else warn "ast-index: install with 'cargo install ast-index --locked' or see https://github.com/defendend/Claude-ast-index-search"; fi
@@ -175,6 +193,12 @@ else
   else
     fail "exe-kit install failed; run: claude plugin install exe-kit@$EXE_MARKETPLACE -y"
   fi
+  if [ -x "$EXE_ROOT/bin/exe" ]; then
+    mkdir -p "$HOME/.local/bin"
+    if [ "$(readlink "$HOME/.local/bin/exe" 2>/dev/null)" = "$EXE_ROOT/bin/exe" ]; then skip "exe command already linked"
+    else act "exe command linked to ~/.local/bin/exe" ln -sfn "$EXE_ROOT/bin/exe" "$HOME/.local/bin/exe"; fi
+    case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) warn "add ~/.local/bin to PATH so the exe command works in your terminal" ;; esac
+  fi
 fi
 
 # ---------- 7. pxpipe (opt-in) ----------
@@ -211,6 +235,8 @@ printf '  ok %s, skipped %s, warnings %s, failed %s\n' "$(printf '%s\n' "${SUMMA
   "$(printf '%s\n' "${SUMMARY[@]}" | grep -c '^fail ' || true)"
 printf '\nNext:\n'
 printf '  restart Claude Code so the new plugins load\n'
-printf '  store a token:   bash %s/bootstrap/secrets.sh set jira-uzinfocom\n' "$EXE_ROOT"
+printf '  create profiles: exe ctx init   (then edit ~/.config/exe/profiles.json)\n'
+printf '  store a token:   exe secret set jira-uzinfocom\n'
+printf '  apply and check: exe setup all && exe doctor\n'
 [ "$WITH_PXPIPE" = 1 ] || printf '  enable pxpipe:   rerun with --pxpipe\n'
 printf '  rerun any time; it only changes what is missing\n'

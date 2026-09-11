@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# exe shim for glab: runs the real glab with the host and token of the current directory's context.
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/../.." && pwd)"
+# shellcheck source=_lib.sh
+. "$HERE/_lib.sh"
+REAL="$(exe_real glab "$HERE")" || { echo "glab is not installed. macOS: brew install glab" >&2; exit 127; }
+exe_env "$ROOT" gitlab
+exec "$REAL" "$@"

@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/hook.js\" session-start --data \"${CLAUDE_PLUGIN_DATA}\"",
+            "timeout": 15,
+            "statusMessage": "Resolving exe context..."
+          }
+        ]
+      }
+    ],
+    "CwdChanged": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/hook.js\" cwd-changed --data \"${CLAUDE_PLUGIN_DATA}\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

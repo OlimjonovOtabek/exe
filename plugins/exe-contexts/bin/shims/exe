@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# exe command line, on PATH inside Claude Code sessions.
+exec node "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/bin/ctx.js" "$@"

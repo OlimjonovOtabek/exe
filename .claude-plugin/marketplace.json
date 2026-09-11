@@ -1,0 +1,49 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "exe",
+  "description": "One install for the way you work with Claude Code: multi-account Jira, GitLab and Figma contexts, a usage-limit guard with Telegram alerts, and a bundle that brings your favourite plugins to every machine.",
+  "version": "0.1.0",
+  "owner": {
+    "name": "Otabek Olimjonov",
+    "url": "https://github.com/olimjonovotabek"
+  },
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "allowCrossMarketplaceDependenciesOn": [
+    "caveman",
+    "ast-index-marketplace",
+    "claude-plugins-official"
+  ],
+  "plugins": [
+    {
+      "name": "exe-kit",
+      "description": "The bundle. Installing it pulls in exe-contexts, exe-usage, caveman, ast-index and Matt Pocock's skills in one step.",
+      "version": "0.1.0",
+      "category": "productivity",
+      "source": "./plugins/exe-kit"
+    },
+    {
+      "name": "exe-contexts",
+      "description": "Auto-detected Jira, GitLab and git identity per organization, keyed on the repo's remote host. Phase 1.",
+      "version": "0.0.1",
+      "category": "productivity",
+      "source": "./plugins/exe-contexts"
+    },
+    {
+      "name": "exe-usage",
+      "description": "Usage-limit guard: status line with rate-limit windows, burn-rate prediction, transcript analysis and Telegram alerts. Phase 2.",
+      "version": "0.0.1",
+      "category": "productivity",
+      "source": "./plugins/exe-usage"
+    },
+    {
+      "name": "exe-figma",
+      "description": "Figma access with one personal access token per context. Enable per project. Phase 3.",
+      "version": "0.0.1",
+      "category": "design",
+      "defaultEnabled": false,
+      "source": "./plugins/exe-figma"
+    }
+  ]
+}

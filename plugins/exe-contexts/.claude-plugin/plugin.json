@@ -1,0 +1,9 @@
+{
+  "name": "exe-contexts",
+  "version": "0.0.1",
+  "description": "Placeholder until Phase 1. Will hold the profile registry, the SessionStart context hook, the Jira and GitLab skills and the doctor.",
+  "author": {
+    "name": "Otabek Olimjonov",
+    "url": "https://github.com/olimjonovotabek"
+  }
+}

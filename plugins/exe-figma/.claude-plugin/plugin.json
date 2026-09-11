@@ -1,0 +1,9 @@
+{
+  "name": "exe-figma",
+  "version": "0.0.1",
+  "description": "Placeholder until Phase 3. Will hold the Figma MCP wrapper that picks the personal access token for the active context.",
+  "author": {
+    "name": "Otabek Olimjonov",
+    "url": "https://github.com/olimjonovotabek"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "exe-usage",
+  "version": "0.0.1",
+  "description": "Placeholder until Phase 2. Will hold the status line sensor, the burn-rate predictor, the transcript aggregator, the analyst and the Telegram notifier.",
+  "author": {
+    "name": "Otabek Olimjonov",
+    "url": "https://github.com/olimjonovotabek"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "exe-kit",
+  "version": "0.1.0",
+  "description": "The exe bundle. A manifest with only dependencies: installing it installs every plugin in the set.",
+  "author": {
+    "name": "Otabek Olimjonov",
+    "url": "https://github.com/olimjonovotabek"
+  },
+  "dependencies": [
+    "exe-contexts",
+    "exe-usage",
+    { "name": "caveman", "marketplace": "caveman" },
+    { "name": "ast-index", "marketplace": "ast-index-marketplace" },
+    { "name": "mattpocock-skills", "marketplace": "claude-plugins-official" }
+  ]
+}

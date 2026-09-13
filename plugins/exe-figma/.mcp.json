@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "figma": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/mcp-wrap.js", "${CLAUDE_PROJECT_DIR}"]
+    }
+  }
+}

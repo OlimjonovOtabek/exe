@@ -9,7 +9,7 @@ One install for the way you work with Claude Code.
 | `exe-kit` | The bundle. Installing it installs everything below plus caveman, ast-index and Matt Pocock's skills. | ready |
 | `exe-contexts` | Jira, GitLab and git identity per organization, picked automatically from the repo's remote host. Tokens stay in the keychain. | ready |
 | `exe-usage` | Usage-limit guard: status line with both rate-limit windows, burn-rate prediction, transcript analysis by Fable, Telegram alerts. | ready |
-| `exe-figma` | Figma with one personal access token per context. Enabled per project, not part of the bundle. | Phase 3 |
+| `exe-figma` | Figma with one personal access token per context. Enabled per project, not part of the bundle. | ready |
 
 ## Install
 
@@ -153,6 +153,22 @@ Configure the bot and the analyst once, through `/plugin configure exe-usage` or
 
 Set `pager` to `on` to also get a message when Claude waits for permission or input. State lives in `~/.local/state/exe/usage`: samples, reports and the alert log used when no bot is configured.
 
+## Figma
+
+Three Figma accounts, one MCP entry. exe-figma starts [figma-developer-mcp](https://github.com/GLips/Figma-Context-MCP) with the personal access token of the current directory's context, taken from the same profiles and secret store as Jira and GitLab. It is not part of the bundle; enable it where design work happens:
+
+```bash
+claude plugin install exe-figma@exe
+claude plugin enable exe-figma@exe --scope project     # inside the project
+exe secret set figma-work                               # one token per account
+```
+
+The official Figma MCP server follows the browser or desktop login and holds one account at a time, which is why exe uses personal access tokens instead. Token access loses the Dev Mode selection features, and Starter-plan files allow only a handful of API reads per month.
+
+## Releases
+
+Every plugin carries its version in `.claude-plugin/plugin.json` and in its marketplace entry; `claude plugin validate .` warns when they differ. Tag a release from the plugin directory with `claude plugin tag --push`, which creates `<plugin>--v<version>`, so the bundle can pin dependency ranges later. GitHub Actions runs the tests, the syntax checks and `claude plugin validate` on every push.
+
 ## Secrets
 
 Tokens never live in this repo or in settings files. The store is the macOS Keychain, `secret-tool` on Linux, or a mode-600 file as a last resort. A stored value of the form `op://vault/item/field` is resolved through the 1Password CLI.
@@ -191,8 +207,9 @@ bootstrap/pxpipe-service.sh       launchd or systemd service for pxpipe
 bootstrap/secrets.sh              shim to the secret store inside exe-contexts
 plugins/exe-kit                   dependencies-only bundle
 plugins/exe-contexts              profiles, shims, hooks, skills, doctor, secret store
-plugins/exe-usage                 Phase 2
-plugins/exe-figma                 Phase 3
+plugins/exe-usage                 status line, predictor, aggregator, analyst, Telegram, hooks, skills
+plugins/exe-figma                 MCP wrapper injecting the context's Figma token, skill
+.github/workflows/validate.yml    tests, syntax checks and plugin validation on every push
 ```
 
 Tests: `node --test "plugins/*/tests/*.test.js"`. Validation: `claude plugin validate .`

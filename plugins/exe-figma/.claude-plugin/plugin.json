@@ -1,9 +1,11 @@
 {
   "name": "exe-figma",
-  "version": "0.0.1",
-  "description": "Placeholder until Phase 3. Will hold the Figma MCP wrapper that picks the personal access token for the active context.",
+  "version": "0.1.0",
+  "description": "Figma through figma-developer-mcp with the personal access token of the current context. Enable it per project; it is not part of the bundle.",
   "author": {
     "name": "Otabek Olimjonov",
     "url": "https://github.com/olimjonovotabek"
-  }
+  },
+  "keywords": ["figma", "design", "mcp", "multi-account"],
+  "dependencies": ["exe-contexts"]
 }

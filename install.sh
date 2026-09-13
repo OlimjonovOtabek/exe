@@ -161,6 +161,7 @@ npm_install() {
 }
 npm_install pxpipe-proxy pxpipe
 npm_install ccusage ccusage
+npm_install figma-developer-mcp figma-developer-mcp
 
 # ---------- 5. marketplaces ----------
 head_ "marketplaces"

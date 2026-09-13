@@ -39,8 +39,8 @@
     },
     {
       "name": "exe-figma",
-      "description": "Figma access with one personal access token per context. Enable per project. Phase 3.",
-      "version": "0.0.1",
+      "description": "Figma through figma-developer-mcp with the personal access token of the current context. Enable it per project; it is not part of the bundle.",
+      "version": "0.1.0",
       "category": "design",
       "defaultEnabled": false,
       "source": "./plugins/exe-figma"

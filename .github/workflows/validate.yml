@@ -1,0 +1,41 @@
+name: validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Tests and syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Shell syntax
+        run: |
+          for f in install.sh bin/exe bootstrap/*.sh plugins/*/bin/*.sh plugins/*/bin/shims/*; do
+            bash -n "$f" || exit 1
+          done
+      - name: JavaScript syntax
+        run: |
+          for f in bootstrap/*.js plugins/*/bin/*.js plugins/*/lib/*.js plugins/*/statusline/*.js; do
+            node --check "$f" || exit 1
+          done
+      - name: Unit tests
+        run: node --test "plugins/*/tests/*.test.js"
+
+  validate:
+    name: Plugin validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Claude Code
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Validate marketplace and plugins
+        run: |
+          claude plugin validate .
+          for p in plugins/*; do claude plugin validate "$p"; done

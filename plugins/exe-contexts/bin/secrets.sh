@@ -38,7 +38,7 @@ backend() {
 }
 
 index_add() { mkdir -p "$CONFIG_DIR"; touch "$INDEX"; grep -qxF "$1" "$INDEX" || echo "$1" >> "$INDEX"; }
-index_remove() { [ -f "$INDEX" ] && grep -vxF "$1" "$INDEX" > "$INDEX.tmp" && mv "$INDEX.tmp" "$INDEX" || true; }
+index_remove() { [ -f "$INDEX" ] || return 0; grep -vxF "$1" "$INDEX" > "$INDEX.tmp" || true; mv "$INDEX.tmp" "$INDEX"; }
 
 raw_get() {
   local name="$1"

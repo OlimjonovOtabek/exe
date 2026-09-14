@@ -212,7 +212,7 @@ if [ -f "$STATUSLINE_SCRIPT" ] && [ -f "$EXE_ROOT/bootstrap/merge-settings.js" ]
   elif [ "$DRY_RUN" = 1 ]; then
     printf '  would set: statusLine.command=node "%s"\n' "$STATUSLINE_SCRIPT"
   else
-    result="$(node "$EXE_ROOT/bootstrap/merge-settings.js" "$HOME/.claude/settings.json" "{\"statusLine\":{\"type\":\"command\",\"command\":\"node \\\"$STATUSLINE_SCRIPT\\\"\"}}")"
+    result="$(node "$EXE_ROOT/bootstrap/merge-settings.js" "$HOME/.claude/settings.json" "{\"statusLine\":{\"type\":\"command\",\"command\":\"node \\\"$STATUSLINE_SCRIPT\\\"\"}}" 2>/dev/null || echo error)"
     case "$result" in
       changed) ok "status line set (5h and 7d limit windows, context, cost)" ;;
       unchanged) skip "status line already exe's" ;;
@@ -235,7 +235,7 @@ if [ "$WITH_PXPIPE" = 1 ]; then
         bash "$EXE_ROOT/bootstrap/pxpipe-service.sh" install && ok "pxpipe service running on port $EXE_PXPIPE_PORT" \
         || fail "pxpipe service did not start"
       result="$(node "$EXE_ROOT/bootstrap/merge-settings.js" "$HOME/.claude/settings.json" \
-        "{\"env\":{\"ANTHROPIC_BASE_URL\":\"http://127.0.0.1:$EXE_PXPIPE_PORT\"}}")"
+        "{\"env\":{\"ANTHROPIC_BASE_URL\":\"http://127.0.0.1:$EXE_PXPIPE_PORT\"}}" 2>/dev/null || echo error)"
       case "$result" in
         changed) ok "Claude Code now routes through pxpipe (env.ANTHROPIC_BASE_URL in ~/.claude/settings.json)" ;;
         unchanged) skip "Claude Code already routes through pxpipe" ;;
@@ -262,3 +262,4 @@ printf '  store a token:   exe secret set jira-uzinfocom\n'
 printf '  apply and check: exe setup all && exe doctor\n'
 [ "$WITH_PXPIPE" = 1 ] || printf '  enable pxpipe:   rerun with --pxpipe\n'
 printf '  rerun any time; it only changes what is missing\n'
+if printf '%s\n' "${SUMMARY[@]}" | grep -q '^fail '; then exit 1; fi

@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const { STATE_DIR, ensureStateDir, readJson, writeJson, threshold, get } = require('../lib/config');
+const { STATE_DIR, ensureStateDir, readJson, writeJson, threshold, get, withLock } = require('../lib/config');
 const { readSamples, predict, shouldAnalyze, fmtMinutes, label } = require('../lib/samples');
 const telegram = require('../lib/telegram');
 
@@ -69,26 +69,34 @@ async function main() {
     const prediction = predict(readSamples(now - 60 * 60 * 1000), now);
     const decision = shouldAnalyze(prediction, threshold());
     if (!decision) return;
-    ensureStateDir();
-    const state = readJson(stateFile('analysis-state.json'), {});
-    const w = prediction.windows[decision.window];
-    const key = w && w.resetsAt ? String(w.resetsAt) : null;
-    const prior = key && state[decision.window] && state[decision.window].resetsAt === key ? state[decision.window] : null;
-    if (prior && !prior.pending) return; // once per window
-    if (state.lastLaunch && now - state.lastLaunch < 30 * 60 * 1000) return; // a pending or failed run gets one retry per half hour
-    state.lastLaunch = now;
-    if (key) state[decision.window] = { resetsAt: key, at: now, pending: true };
-    writeJson(stateFile('analysis-state.json'), state);
-    launchAnalysis(decision.reason, decision.window);
+    const outcome = withLock('analysis-state', () => {
+      const state = readJson(stateFile('analysis-state.json'), {});
+      const w = prediction.windows[decision.window];
+      const key = w && w.resetsAt ? String(w.resetsAt) : null;
+      const prior = key && state[decision.window] && state[decision.window].resetsAt === key ? state[decision.window] : null;
+      if (prior && !prior.pending) return false; // once per window
+      const launches = state.launches || {};
+      if (launches[decision.window] && now - launches[decision.window] < 30 * 60 * 1000) return false; // a pending or failed run gets one retry per half hour
+      launches[decision.window] = now;
+      state.launches = launches;
+      if (key) state[decision.window] = { resetsAt: key, at: now, pending: true };
+      writeJson(stateFile('analysis-state.json'), state);
+      launchAnalysis(decision.reason, decision.window);
+      return true;
+    });
+    if (outcome.skipped || !outcome.value) return;
     process.stdout.write(`exe-usage: ${decision.reason}. Analysis started in the background; the result goes to Telegram${telegram.configured() ? '' : ' once a bot is configured'} and to ${STATE_DIR}/reports.\n`);
     return;
   }
 
   if (event === 'limit-hit') {
-    ensureStateDir();
-    const state = readJson(stateFile('alerts.json'), {});
-    if (state.lastLimitHit && now - state.lastLimitHit < 10 * 60 * 1000) return;
-    state.lastLimitHit = now; writeJson(stateFile('alerts.json'), state);
+    const gate = withLock('alerts', () => {
+      const state = readJson(stateFile('alerts.json'), {});
+      if (state.lastLimitHit && now - state.lastLimitHit < 10 * 60 * 1000) return false;
+      state.lastLimitHit = now; writeJson(stateFile('alerts.json'), state);
+      return true;
+    });
+    if (gate.skipped || !gate.value) return;
     const prediction = predict(readSamples(now - 2 * 3600 * 1000), now);
     let consumers = '';
     try { consumers = await topConsumers(prediction); } catch (err) { consumers = `(could not read transcripts: ${err.message})`; }
@@ -108,9 +116,13 @@ async function main() {
     else if (type === 'quota_auto_resume_disabled') text = '<b>Claude stopped waiting</b> for the usage limit reset (autoContinueAtUsageLimit is off).';
     else if (type === 'pager') {
       if (get('pager') !== 'on') return;
-      const state = readJson(stateFile('alerts.json'), {});
-      if (state.lastPage && now - state.lastPage < 60 * 1000) return;
-      state.lastPage = now; writeJson(stateFile('alerts.json'), state);
+      const gate = withLock('alerts', () => {
+        const state = readJson(stateFile('alerts.json'), {});
+        if (state.lastPage && now - state.lastPage < 60 * 1000) return false;
+        state.lastPage = now; writeJson(stateFile('alerts.json'), state);
+        return true;
+      });
+      if (gate.skipped || !gate.value) return;
       text = `<b>Claude needs you</b>${message ? `: ${message}` : ''}`;
     }
     if (text && telegram.configured()) await telegram.sendMessage(text);

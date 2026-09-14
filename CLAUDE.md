@@ -13,7 +13,7 @@ Claude Code plugin marketplace. Four plugins under `plugins/`, one installer, sh
 ## Check before committing
 
 ```
-node --test "plugins/*/tests/*.test.js"
+node --test "plugins/*/tests/*.test.js" "bootstrap/tests/*.test.js"
 claude plugin validate . && for p in plugins/*; do claude plugin validate "$p"; done
 bash -n install.sh && bash install.sh --source "$PWD" --dry-run
 ```

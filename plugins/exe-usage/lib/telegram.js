@@ -13,9 +13,16 @@ function escapeHtml(text) {
   return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Cuts HTML for Telegram without leaving a half tag, a half entity or an unclosed tag behind.
 function truncate(text, max = MAX_TEXT) {
   if (text.length <= max) return text;
-  return `${text.slice(0, max - 20)}\n… (truncated)`;
+  let cut = text.slice(0, max - 40).replace(/<[^>]*$/, '').replace(/&[^;\s]*$/, '');
+  for (const tag of ['b', 'i', 'code', 'pre', 'a']) {
+    const opens = (cut.match(new RegExp(`<${tag}[\\s>]`, 'g')) || []).length;
+    const closes = (cut.match(new RegExp(`</${tag}>`, 'g')) || []).length;
+    for (let n = closes; n < opens; n += 1) cut += `</${tag}>`;
+  }
+  return `${cut}\n… (truncated)`;
 }
 
 function configured() {

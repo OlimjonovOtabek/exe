@@ -58,28 +58,34 @@ function main(argv) {
   const [file, ...rest] = argv;
   if (!file) usage();
 
+  const parsePatch = (text, what) => {
+    try { const v = JSON.parse(text); if (!isObject(v)) throw new Error('not an object'); return v; } catch (err) { console.error(`merge-settings: ${what} is not a JSON object: ${err.message}`); process.exit(2); }
+  };
   let patch = {};
   const removals = [];
   for (let i = 0; i < rest.length; i += 1) {
     const arg = rest[i];
     if (arg === '--file') {
-      patch = merge(patch, JSON.parse(fs.readFileSync(rest[++i], 'utf8')));
+      patch = merge(patch, parsePatch(fs.readFileSync(rest[++i], 'utf8'), rest[i]));
     } else if (arg === '--remove') {
       removals.push(rest[++i]);
     } else if (arg.startsWith('--')) {
       usage();
     } else {
-      patch = merge(patch, JSON.parse(arg));
+      patch = merge(patch, parsePatch(arg, 'the inline patch'));
     }
   }
 
   let current = {};
   if (fs.existsSync(file)) {
     const raw = fs.readFileSync(file, 'utf8');
-    current = raw.trim() ? JSON.parse(raw) : {};
+    if (raw.trim()) {
+      try { current = JSON.parse(raw); } catch (err) { console.error(`merge-settings: ${file} is not valid JSON (${err.message}); fix it by hand, nothing was changed`); process.exit(3); }
+    }
   }
 
-  const next = merge(current, patch);
+  // Work on a deep copy so removals never touch the object we compare against.
+  const next = merge(JSON.parse(JSON.stringify(current)), patch);
   for (const dotted of removals) removePath(next, dotted);
 
   if (deepEqual(current, next)) {

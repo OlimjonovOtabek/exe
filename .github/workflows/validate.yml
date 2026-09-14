@@ -24,7 +24,7 @@ jobs:
             node --check "$f" || exit 1
           done
       - name: Unit tests
-        run: node --test "plugins/*/tests/*.test.js"
+        run: node --test "plugins/*/tests/*.test.js" "bootstrap/tests/*.test.js"
 
   validate:
     name: Plugin validation

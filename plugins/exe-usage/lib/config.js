@@ -65,4 +65,18 @@ function writeJson(file, data) {
   fs.renameSync(tmp, file);
 }
 
-module.exports = { DEFAULTS, CONFIG_DIR, CONFIG_FILE, STATE_DIR, CLAUDE_DIR, get, threshold, ensureStateDir, readJson, writeJson };
+// Serialize read-decide-write sequences on shared state files across concurrent sessions.
+// mkdir is atomic; a lock older than staleMs is treated as abandoned. Returns
+// { skipped: true } when another process holds the lock, else { skipped: false, value }.
+function withLock(name, fn, { staleMs = 120000 } = {}) {
+  ensureStateDir();
+  const dir = path.join(STATE_DIR, `${name}.lock`);
+  const acquire = () => { try { fs.mkdirSync(dir); return true; } catch (err) { if (err.code !== 'EEXIST') throw err; return false; } };
+  if (!acquire()) {
+    try { if (Date.now() - fs.statSync(dir).mtimeMs > staleMs) fs.rmdirSync(dir); } catch (_) { /* lock vanished */ }
+    if (!acquire()) return { skipped: true };
+  }
+  try { return { skipped: false, value: fn() }; } finally { try { fs.rmdirSync(dir); } catch (_) { /* already released */ } }
+}
+
+module.exports = { DEFAULTS, CONFIG_DIR, CONFIG_FILE, STATE_DIR, CLAUDE_DIR, get, threshold, ensureStateDir, readJson, writeJson, withLock };

@@ -77,10 +77,24 @@ test('appendSample throttles to one per minute and the status line renders', () 
   assert.match(out.stdout, /Fable 5\.1·high/); assert.match(out.stdout, /5h 62%/); assert.match(out.stdout, /7d 41%/); assert.match(out.stdout, /ctx 38%/); assert.match(out.stdout, /px on/);
 });
 
-test('telegram helpers escape and truncate', () => {
+test('telegram helpers escape and truncate without breaking markup', () => {
   assert.equal(T.escapeHtml('<b>&'), '&lt;b&gt;&amp;');
   assert.ok(T.truncate('x'.repeat(5000)).length <= T.MAX_TEXT);
+  const cut = T.truncate(`<b>title</b> ${'y'.repeat(3950)}<b>open tail${'z'.repeat(100)}`);
+  assert.doesNotMatch(cut, /<[^>]*$/, 'no half tag at the end');
+  assert.equal((cut.match(/<b>/g) || []).length, (cut.match(/<\/b>/g) || []).length, 'every b tag is closed');
   assert.equal(T.configured(), false);
+});
+
+test('withLock serializes and reports a held lock', () => {
+  const first = config.withLock('t', () => 'ran');
+  assert.deepEqual(first, { skipped: false, value: 'ran' });
+  fs.mkdirSync(path.join(config.STATE_DIR, 't.lock'));
+  assert.deepEqual(config.withLock('t', () => 'ran'), { skipped: true });
+  const old = new Date(Date.now() - 10 * 60 * 1000);
+  fs.utimesSync(path.join(config.STATE_DIR, 't.lock'), old, old);
+  assert.equal(config.withLock('t', () => 'again').value, 'again', 'a stale lock is reclaimed');
+  assert.equal(fs.existsSync(path.join(config.STATE_DIR, 't.lock')), false);
 });
 
 test('aggregate reads a transcript fixture', async () => {

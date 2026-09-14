@@ -212,7 +212,7 @@ plugins/exe-figma                 MCP wrapper injecting the context's Figma toke
 .github/workflows/validate.yml    tests, syntax checks and plugin validation on every push
 ```
 
-Tests: `node --test "plugins/*/tests/*.test.js"`. Validation: `claude plugin validate .`
+Tests: `node --test "plugins/*/tests/*.test.js" "bootstrap/tests/*.test.js"`. Validation: `claude plugin validate .`
 
 ## Uninstall
 

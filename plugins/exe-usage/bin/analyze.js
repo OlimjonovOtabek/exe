@@ -15,7 +15,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { STATE_DIR, ensureStateDir, readJson, writeJson, threshold } = require('../lib/config');
+const { STATE_DIR, ensureStateDir, readJson, writeJson, withLock } = require('../lib/config');
 const { readSamples, predict, fmtMinutes, label } = require('../lib/samples');
 const { aggregate } = require('../lib/aggregate');
 const { runAnalysis, reportToMarkdown } = require('../lib/analyst');
@@ -68,8 +68,9 @@ async function main() {
   const limits = limitsSnapshot(prediction);
   const result = runAnalysis({ reason, limits, summary, dryRun: dry });
   if (dry) { process.stdout.write(result.prompt); return; }
+  const record = (entry) => { if (!cooldownKey) return; withLock('analysis-state', () => { const s = readJson(stateFile, {}); s[windowKey] = entry; writeJson(stateFile, s); }); };
   if (result.error) {
-    if (cooldownKey) { state[windowKey] = { resetsAt: cooldownKey, at: now, pending: true, failedAt: now, error: result.error.slice(0, 200) }; writeJson(stateFile, state); }
+    record({ resetsAt: cooldownKey, at: now, pending: true, failedAt: now, error: result.error.slice(0, 200) });
     process.stderr.write(`exe-usage: ${result.error}\n`);
     if (!noTelegram && telegram.configured()) await telegram.sendMessage(`<b>exe usage analysis failed</b>\n${telegram.escapeHtml(result.error)}\nReason: ${telegram.escapeHtml(reason)}`);
     process.exit(1);
@@ -82,7 +83,7 @@ async function main() {
   const mdFile = path.join(reportDir, `${stamp}.md`);
   fs.writeFileSync(mdFile, markdown);
   writeJson(path.join(reportDir, `${stamp}.json`), { reason, limits, summary, report: result.report, cost: result.cost });
-  if (cooldownKey) { state[windowKey] = { resetsAt: cooldownKey, at: now, pending: false, report: mdFile }; writeJson(stateFile, state); }
+  record({ resetsAt: cooldownKey, at: now, pending: false, report: mdFile });
 
   process.stdout.write(json ? `${JSON.stringify(result.report, null, 2)}\n` : markdown);
 

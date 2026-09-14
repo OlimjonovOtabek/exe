@@ -41,6 +41,7 @@ function loadProfiles(file = PROFILES_PATH) {
   }
   for (const [name, ctx] of Object.entries(data.contexts)) {
     if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) throw new ProfilesError(`context name "${name}" must be lowercase letters, digits and dashes`);
+    if (!ctx || typeof ctx !== 'object' || Array.isArray(ctx)) throw new ProfilesError(`context "${name}" must be an object`);
     if (ctx.jira && !ctx.jira.url) throw new ProfilesError(`context "${name}": jira.url missing`);
     if (ctx.jira && ctx.jira.kind && !['cloud', 'datacenter'].includes(ctx.jira.kind)) throw new ProfilesError(`context "${name}": jira.kind must be cloud or datacenter`);
     if (ctx.gitlab && !ctx.gitlab.host) throw new ProfilesError(`context "${name}": gitlab.host missing`);

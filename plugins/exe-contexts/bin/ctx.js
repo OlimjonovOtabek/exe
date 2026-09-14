@@ -33,7 +33,7 @@ function shellQuote(value) { return `'${String(value).replace(/'/g, `'\\''`)}'`;
 function die(message, code = 1) { process.stderr.write(`exe: ${message}\n`); process.exit(code); }
 
 function usage() {
-  const lines = fs.readFileSync(__filename, 'utf8').split('\n').slice(3, 17).map((l) => l.replace(/^\/\/ ?/, ''));
+  const lines = fs.readFileSync(__filename, 'utf8').split('\n').slice(3, 15).map((l) => l.replace(/^\/\/ ?/, ''));
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 
@@ -119,12 +119,15 @@ function printActions(actions) {
 function cmdSetup(args) {
   const dryRun = !!flag(args, '--dry-run');
   const what = args[0] || 'all';
-  const profiles = P.loadProfiles();
-  if (what === 'git' || what === 'all') printActions(S.setupGit(profiles, { dryRun }));
-  if (what === 'jira' || what === 'all') printActions(S.setupJira(profiles, { dryRun }));
-  if (what === 'glab') printActions(S.setupGlab(profiles, { dryRun }));
   if (!['git', 'jira', 'glab', 'all'].includes(what)) die(`unknown setup target "${what}"`, 2);
+  const profiles = P.loadProfiles();
+  const actions = [];
+  if (what === 'git' || what === 'all') actions.push(...S.setupGit(profiles, { dryRun }));
+  if (what === 'jira' || what === 'all') actions.push(...S.setupJira(profiles, { dryRun }));
+  if (what === 'glab') actions.push(...S.setupGlab(profiles, { dryRun }));
+  printActions(actions);
   if (what === 'all') process.stdout.write('glab tokens are injected per command by the exe shim; run "exe setup glab" to also store them in glab for your own terminal.\n');
+  if (actions.some((a) => a.action === 'fail')) process.exit(1);
 }
 
 async function cmdDoctor(args) {
